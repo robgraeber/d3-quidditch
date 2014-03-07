@@ -76,11 +76,10 @@ var Player = function(gameOptions){
     console.log(opts.x, opts.y);
     this.setX(opts.x || x);
     this.setY(opts.y || y);
-    console.log(this.getX(), this.getY());
     this.el.attr('transform', "translate("+this.getX()+","+this.getY()+")");
       // "rotate("+this.angle+","+this.getX()+","+this.getY()+")"+
 
-    console.log('transform', "translate("+this.getX()+","+this.getY()+")");
+    // console.log('transform', "translate("+this.getX()+","+this.getY()+")");
   };
   this.moveAbsolute = function(x,y){
     this.transform({x:x, y:y});
@@ -109,5 +108,30 @@ for (var i = 0; i < players.length; i++){
   players[i].render(gameBoard);
 }
 
-
+var createEnemies = function(){
+  return _.range(0,gameOptions.nEnemies).map(function(i){
+    return{
+      id: i,
+      x: Math.random()*100,
+      y: Math.random()*100,
+    };
+  });
+};
+var renderEnemies = function(enemyData){
+  var enemies = gameBoard.selectAll('circle.enemy')
+                         .data(enemyData);
+  enemies.attr('class', 'enemy')
+         .attr('cx', function(enemy){ return axes.x(enemy.x);})
+         .attr('cy', function(enemy){ return axes.y(enemy.y);})
+         .attr('r', 7);
+  enemies.enter()
+         .append('svg:circle')
+         .attr('class', 'enemy')
+         .attr('cx', function(enemy){ return axes.x(enemy.x);})
+         .attr('cy', function(enemy){ return axes.y(enemy.y);})
+         .attr('r', 7);
+  
+  enemies.exit()
+         .remove();
+};
 
