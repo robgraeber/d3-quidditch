@@ -10,12 +10,26 @@ var levelNum = 0;
 var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
+var socket = io.connect('http://23.239.1.96:2020');
+socket.on("initialize other players", function(data){
+  console.log("INITIALIZE OTHER PLAYERS",data);
+})
+socket.on('enemy player move', function (data) {
+  console.log("ENEMY PLAYER MOVE", data);
+});
+socket.on('enemy player enter', function (data) {
+
+  console.log("ENEMY PLAYER ENTER",data);
+});
+socket.on('enemy player exit', function (data) {
+  console.log("ENEMY PLAYER EXIT",data);
+});
+
 var addEnemies = function (){
   var color = inverse(board.select("circle.player").style("fill"));
-  console.log(color);
   var currentEnemies = board.selectAll("circle.enemy").data().concat(
     _.map(_.range(2,3), function(num){
-      return {radius: num, color: color};v
+      return {radius: num, color: color};
    })
   );
   setupEnemies(currentEnemies);
@@ -32,8 +46,8 @@ var setupEnemies = function(data){
     return Math.random()*width;
   }).attr("cy", function(data){
     return Math.random()*height;
-  }).attr("r", 0).transition().duration(500).attr("r", function(data){
-    return data.radius * 2;
+  }).attr("r", function(data){
+    return 4;
   }).attr("class","enemy");
 
   board.selectAll("circle.player").moveToFront();
@@ -81,7 +95,6 @@ var setupPlayer = function(color){
   }).attr("r", 0).transition().duration(500).attr("r", function(data){
     return data.radius;
   }).attr("class","player");
-
 }
 var setupLevel = function(){
   levelNum++;
@@ -107,11 +120,16 @@ var movePlayer = function(){
     player
     .attr("cx",function(data){
       var x = getFloat(this, "cx");
-      return x+(mouse.x - x)/2;
+      xpos = x;
+      return x+(mouse.x - x)/(2+((getFloat(this, "r")-data.radius)/15));
     }).attr("cy", function(data){
       var y = getFloat(this, "cy");
-      return y+(mouse.y - y)/2;
+      return y+(mouse.y - y)/(2+((getFloat(this, "r")-data.radius)/15));
     });
+
+    var x = getFloat(player, "cx");
+    var y = getFloat(player, "cy");
+    socket.emit("player move",{x:x, y:y});
 }
 
 var collisionCheck = function(){
@@ -207,9 +225,5 @@ setInterval(updateLoop, 1000/60);
 
 
 
-  var socket = io.connect('http://23.239.1.96:2020');
-  socket.on('news', function (data) {
-    console.log(data);
-    socket.emit('my other event', { my: 'data' });
-  });
+
 

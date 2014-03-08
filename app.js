@@ -18,10 +18,30 @@ function handler (req, res) {
   //   res.end(data);
   // });
 }
+// {radius: 1234, color:"#asdf", id:35435, points:1235, x:235, y:1245, socket: null};
+var players = [];
 
 io.sockets.on('connection', function (socket) {
-  socket.emit('news', { hello: 'world' });
-  socket.on('my other event', function (data) {
-    console.log(data);
+  
+  for (var i = 0; i < players.length; i++) {
+    socket.emit("initialize other players",{id: i});
+  };
+
+  for (var i = 0; i < players.length; i++) {
+    players[i].emit("enemy player enter",{id: 1});
+  };
+
+  socket.on('player move', function (data) {
+  });
+  players.push(socket);
+  socket.on('disconnect', function (socket) {
+    if(players.indexOf(socket)!== -1){
+      players.splice(players.indexOf(socket),1);
+    }
+
+    for (var i = 0; i < players.length; i++) {
+      players[i].emit("enemy player exit",{id: 1});
+    };
+
   });
 });
