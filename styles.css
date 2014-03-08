@@ -3,14 +3,26 @@
 /* Note: an asteroid image is included in this repo. 
 Feel free to use it if you like. */
 .gameContainer{
-  width:640px;
+  width:100%;
+  /*height:100%;*/
   background-color:black;
+  cursor: none;
 }
 
 circle.enemy{
   opacity:0.8;
+  stroke: black;
+  stroke-opacity: 0.08;
+  stroke-width:1;
+  z-index: -1;
 }
 
 circle.player{
-  fill:blue;
+  stroke: black;
+  stroke-opacity: 0.08;
+  stroke-width:1;
+  z-index: 1000;
+}
+.level{
+  height:18px;
 }

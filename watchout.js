@@ -1,33 +1,28 @@
 // start slingin' some d3 here.
-var width = 640;
-var height = 480;
+var width = window.innerWidth*0.99;
+var height = window.innerHeight*0.94;
 var mouse = {x:0, y:0};
-var score =0;
+var levelScore = 0;
+var score = 0;
 var highScore = 0;
-var collisions=0;
-var collisionTime = (new Date()).getTime();
+var levelNum = 0;
 
 var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
 var addEnemies = function (){
   var currentEnemies = board.selectAll("circle.enemy").data().concat(
-    _.map(_.range(10), function(item){
-      return {id: item};
+    _.map(_.range(1,2), function(num){
+      return {radius: num};
    })
   );
   setupEnemies(currentEnemies);
+
 }
-var shuffleEnemies = function (){
-  var currentEnemies = _.shuffle(board.selectAll("circle.enemy").data());
-  setupEnemies(currentEnemies);
-};
+
 var setupEnemies = function(data){
   var enemies = board.selectAll("circle.enemy").data(data);
   
-  enemies.attr("r", function(data){
-    return data.id*2;
-  });
   enemies.enter().append("svg:circle")
   .style("fill", function(){
     return '#'+Math.floor(Math.random()*16777215).toString(16);
@@ -36,15 +31,29 @@ var setupEnemies = function(data){
     return Math.random()*width;
   }).attr("cy", function(data){
     return Math.random()*height;
-  }).attr("r", function(data){
-    return data.id*2;
+  }).attr("r", 0).transition().duration(500).attr("r", function(data){
+    return data.radius * 2;
   }).attr("class","enemy");
+
+  board.selectAll("circle.player").moveToFront();
 }
-var removeEnemies = function(){
-  var enemyData = board.selectAll("circle.enemy").data();
-  var enemies = board.selectAll("circle.enemy").data(enemyData.slice(0, Math.floor(enemyData.length/2)));
-  enemies.exit().remove();
+d3.selection.prototype.moveToFront = function() {
+  return this.each(function(){
+    this.parentNode.appendChild(this);
+  });
+};
+var removeEntity = function(enemy, selectorString){
+  if(!(enemy instanceof d3.selection)){
+    enemy = d3.select(enemy);
+  }
+
+  var badData = enemy.data();
+  var enemyData = board.selectAll(selectorString).data();
+  enemyData.splice(enemyData.indexOf(badData[0]),1);
+  enemyData = board.selectAll(selectorString).data(enemyData);
+  enemyData.exit().remove();
 }
+
 var moveEnemies = function(){
   var enemies = board.selectAll("circle.enemy");
 
@@ -55,28 +64,45 @@ var moveEnemies = function(){
     return Math.random()*width;
   }).attr("cy", function(data){
     return Math.random()*height;
-  }).attr("r", function(data){
-    return data.id*2;
   });
 }
-var setupPlayer = function(){
-  var player = board.selectAll("circle.player").data([{x:Math.random()*width, y:Math.random()*height, radius:12}]);
-  
+
+var setupPlayer = function(color){
+  color = color||"#FFFFFF";
+  var player = board.selectAll("circle.player").data([{x:Math.random()*width, y:Math.random()*height, radius:24, color: color}]);
   player.enter().append("svg:circle")
-    .attr("cx",function(data){
+  .style("fill", function(data){
+    return data.color;
+  }).attr("cx",function(data){
     return data.x;
   }).attr("cy", function(data){
     return data.y;
-  }).attr("r", function(data){
+  }).attr("r", 0).transition().duration(500).attr("r", function(data){
     return data.radius;
   }).attr("class","player");
 
 }
+var setupLevel = function(){
+  levelNum++;
+  var color = "#FFFFFF"
+  if(levelNum === 1){
+    color = "blue"
+  }else if(levelNum === 2){
+    color = "red";
+  }else{
+    color = '#'+Math.floor(Math.random()*16777215).toString(16);
+  }
+  if(levelNum >= 2){
+    var bgColor = board.selectAll("circle.player").style("fill");
+    d3.select(".gameContainer").style("background-color", bgColor);
+    removeEntity(board.select("circle.player"), "circle.player");
+  }
+  setupPlayer(color);
+  setTimeout(addEnemies, 300);
 
-// x += (mouse.x - x)/2
+}
 var movePlayer = function(){
    var player = board.selectAll("circle.player");
-
     player
     .attr("cx",function(data){
       var x = getFloat(this, "cx");
@@ -84,8 +110,6 @@ var movePlayer = function(){
     }).attr("cy", function(data){
       var y = getFloat(this, "cy");
       return y+(mouse.y - y)/2;
-    }).attr("r", function(data){
-      return data.radius;
     });
 }
 
@@ -97,19 +121,21 @@ var collisionCheck = function(){
   var playerY = getFloat(player, "cy");
   var playerR = getFloat(player, "r");
 
-  _.each(enemies[0],function(item){
-    var enemyX = getFloat(item, "cx");
-    var enemyY = getFloat(item, "cy");
-    var enemyR = getFloat(item, "r");
+  _.each(enemies[0],function(enemy){
+    var enemyX = getFloat(enemy, "cx");
+    var enemyY = getFloat(enemy, "cy");
+    var enemyR = getFloat(enemy, "r");
     if(distanceBetween(playerX,playerY,enemyX,enemyY)<playerR+enemyR){
-      var currentTime = (new Date()).getTime();
-      if(currentTime - collisionTime > 1000){
-        collisionTime = currentTime;
-        if(score > highScore){
-          highScore = score;
-        }
-        score = 0;
-        collisions++;
+      score++;
+      levelScore++;
+      setFloat(player, "r", getFloat(player, "r") + 20);
+      removeEntity(enemy, "circle.enemy");
+      
+      if(levelScore >= 75){
+        levelScore = 0;
+        setTimeout(setupLevel, 500);
+      }else{
+        addEnemies();
       }
     }
   })
@@ -121,6 +147,13 @@ var getFloat = function(item, name){
     return parseFloat(d3.select(item).attr(name));
   }
 };
+var setFloat = function(item, name, value){
+  if(item instanceof d3.selection){
+    item.attr(name, value);
+  }else{
+    return d3.select(item).attr(name, value);
+  }
+};
 
 var updateLoop = function(){
   movePlayer();
@@ -128,10 +161,14 @@ var updateLoop = function(){
   updateScore();
 }
 var updateScore = function(){
-  score++;
-  d3.select(".high span").text(highScore);
+  // d3.select(".high span").text(highScore);
   d3.select(".current span").text(score);
-  d3.select(".collisions span").text(collisions);
+  if(score > highScore){
+    highScore = score;
+  }
+  if(levelNum > 1){
+   d3.select(".level").text("Level: "+levelNum);
+  }
 }
 
 
@@ -146,7 +183,6 @@ board.on("mousemove", function(){
    mouse.y = d3.mouse(this)[1];
   });
 
-addEnemies();//setupEnemies();
-setupPlayer();
+setupLevel();
 setInterval(moveEnemies, 800);
 setInterval(updateLoop, 1000/60);
