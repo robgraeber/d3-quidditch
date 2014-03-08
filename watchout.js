@@ -11,9 +11,11 @@ var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
 var addEnemies = function (){
+  var color = inverse(board.select("circle.player").style("fill"));
+  console.log(color);
   var currentEnemies = board.selectAll("circle.enemy").data().concat(
-    _.map(_.range(1,2), function(num){
-      return {radius: num};
+    _.map(_.range(2,3), function(num){
+      return {radius: num, color: color};v
    })
   );
   setupEnemies(currentEnemies);
@@ -24,10 +26,9 @@ var setupEnemies = function(data){
   var enemies = board.selectAll("circle.enemy").data(data);
   
   enemies.enter().append("svg:circle")
-  .style("fill", function(){
-    return '#'+Math.floor(Math.random()*16777215).toString(16);
-  })
-  .attr("cx",function(data){
+  .style("fill", function(data){
+    return data.color;
+  }).attr("cx",function(data){
     return Math.random()*width;
   }).attr("cy", function(data){
     return Math.random()*height;
@@ -133,7 +134,7 @@ var collisionCheck = function(){
       
       if(levelScore >= 75){
         levelScore = 0;
-        setTimeout(setupLevel, 500);
+        setTimeout(setupLevel, 300);
       }else{
         addEnemies();
       }
@@ -170,7 +171,24 @@ var updateScore = function(){
    d3.select(".level").text("Level: "+levelNum);
   }
 }
+function inverse(hex) {
+  if (hex.length != 7 || hex.indexOf('#') != 0) {
+    return null;
+  }
+  var r = (255 - parseInt(hex.substring(1, 3), 16)).toString(16);
+  var g = (255 - parseInt(hex.substring(3, 5), 16)).toString(16);
+  var b = (255 - parseInt(hex.substring(5, 7), 16)).toString(16);
+  var inverse = "#" + pad(r) + pad(g) + pad(b);
 
+  return inverse
+}
+function pad(num) {
+  if (num.length < 2) {
+    return "0" + num;
+  } else {
+    return num;
+  }
+}
 
 var distanceBetween = function(x1,y1,x2,y2){
   var a = x1 - x2;
@@ -186,3 +204,12 @@ board.on("mousemove", function(){
 setupLevel();
 setInterval(moveEnemies, 800);
 setInterval(updateLoop, 1000/60);
+
+
+
+  var socket = io.connect('http://23.239.1.96:2020');
+  socket.on('news', function (data) {
+    console.log(data);
+    socket.emit('my other event', { my: 'data' });
+  });
+
