@@ -2,4 +2,15 @@
 
 /* Note: an asteroid image is included in this repo. 
 Feel free to use it if you like. */
+.gameContainer{
+  width:640px;
+  background-color:black;
+}
 
+circle.enemy{
+  opacity:0.8;
+}
+
+circle.player{
+  fill:blue;
+}
