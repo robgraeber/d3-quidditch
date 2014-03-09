@@ -1,6 +1,6 @@
 // start slingin' some d3 here.
-var width = 1024;
-var height = 768;
+var width = 1400;
+var height = 600;
 var mouse = {x:0, y:0};
 var score = 0;
 var highScore = 0;
@@ -9,99 +9,114 @@ var levelNum = 0;
 var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
-var socket = io.connect('http://23.239.1.96:2020');
+var socket = io.connect('http://23.239.1.96:2016');
 socket.on("playerInitialize", function(data){
   addPlayer(data);
-  console.log("INITIALIZE ME",data);
-})
+  console.log("playerInitialize",data);
+});
+socket.on("snitchInitialize", function(data){
+  addSnitch(data);
+  console.log("snitchInitialize",data);
+});
 socket.on("enemyInitialize", function(data){
   for(var key in data){
     console.log("INITIALIZE OTHER PLAYERS",data[key]);
     addEnemyPlayer(data[key]);
   }
-})
+});
+socket.on("enemyScore", function(data){
+  console.log("enemyScore",data);
+  removeEntity(board.select("circle.enemy"), "circle.enemy");
+  d3.selectAll("circle.enemyPlayer").each(function(d,i){
+    if(getFloat(this,"id") === data.id){
+      setFloat(this,"points", data.points);
+      setFloat(this,"r",data.radius);
+    }
+  });
+});
+socket.on("snitchMove", function(data){
+  //console.log("snitchMove",data);
+  moveSnitch(data);
+});
 socket.on('enemyMove', function (data) {
-  console.log(data);
   _.each(data, function(item){
     d3.selectAll("circle.enemyPlayer").each(function(d,i){
       if(getFloat(this,"id") === item.id){
-        setFloat(this,"cx",item.x);
-        setFloat(this,"cy",item.y);
+        setFloat(this,"mouseX",item.x);
+        setFloat(this,"mouseY",item.y);
       }
-    })
-  })
-
+    });
+  });
+});
+socket.on("snitchEnter", function(data){
+  // console.log("snitchEnter",data);
+  addSnitch(data);
 });
 socket.on('enemyEnter', function (data) {
-  console.log("ENEMY PLAYER ENTER",data);
+  // console.log("ENEMY PLAYER ENTER",data);
   addEnemyPlayer(data);
 });
 socket.on('enemyExit', function (data) {
   console.log("ENEMY PLAYER EXIT",data);
+  d3.selectAll("circle.enemyPlayer").each(function(d,i){
+      if(getFloat(this,"id") === data.id){
+        removeEntity(this, "circle.enemyPlayer");
+      }
+    });
 });
 
-var addEnemies = function (){
-  // var color = inverse(board.select("circle.player").style("fill"));
-  var currentEnemies = board.selectAll("circle.enemy").data().concat(
-    _.map(_.range(2,3), function(num){
-      return {radius: num, color: "#FFFF00"};
-   })
-  );
-  setupEnemies(currentEnemies);
-
-}
-
-var setupEnemies = function(data){
-  var enemies = board.selectAll("circle.enemy").data(data);
-  
-  enemies.enter().append("svg:circle")
-  .style("fill", function(data){
-    return data.color;
-  }).attr("cx",function(data){
-    return Math.random()*width;
-  }).attr("cy", function(data){
-    return Math.random()*height;
-  }).attr("r", function(data){
-    return 4;
-  }).attr("class","enemy");
-
-  board.selectAll("circle.player").moveToFront();
-}
 d3.selection.prototype.moveToFront = function() {
   return this.each(function(){
     this.parentNode.appendChild(this);
   });
 };
-var removeEntity = function(enemy, selectorString){
-  if(!(enemy instanceof d3.selection)){
-    enemy = d3.select(enemy);
+var removeEntity = function(item, selectorString){
+  if(!(item instanceof d3.selection)){
+    item = d3.select(item);
   }
 
-  var badData = enemy.data();
-  var enemyData = board.selectAll(selectorString).data();
-  enemyData.splice(enemyData.indexOf(badData[0]),1);
-  enemyData = board.selectAll(selectorString).data(enemyData);
-  enemyData.exit().remove();
-}
+  var badData = item.data();
+  var itemData = board.selectAll(selectorString).data();
+  itemData.splice(itemData.indexOf(badData[0]),1);
+  itemData = board.selectAll(selectorString).data(itemData);
+  itemData.exit().remove();
+};
 
-var moveEnemies = function(){
+var moveSnitch = function(data){
   var enemies = board.selectAll("circle.enemy");
 
   enemies.transition()
   .duration(500)
   .ease("sin")
-  .attr("cx",function(data){
-    return Math.random()*width;
-  }).attr("cy", function(data){
-    return Math.random()*height;
+  .attr("cx",function(){
+    return data.x;
+  }).attr("cy", function(){
+    return data.y;
   });
-}
+};
+var addSnitch = function(data){
+  data = board.selectAll("circle.enemy").data().concat(data);
+  
+  board.selectAll("circle.enemy").data(data).enter().append("svg:circle")
+  .style("fill", function(data){
+    return data.color;
+  }).attr("cx",function(data){
+    return data.x;
+  }).attr("cy", function(data){
+    return data.y;
+  }).attr("r", function(data){
+    return data.radius;
+  }).attr("class","enemy");
 
+  board.selectAll("circle.enemy").moveToFront();
+};
 var addPlayer = function(data){
   data = board.selectAll("circle.player").data().concat(data);
   
   board.selectAll("circle.player").data(data).enter().append("svg:circle")
   .style("fill", function(data){
+    setFloat(this, "id", data.id);
+    setFloat(this, "points", 0);
     return data.color;
   }).attr("cx",function(data){
     return data.x;
@@ -110,65 +125,64 @@ var addPlayer = function(data){
   }).attr("r", 0).transition().duration(500).attr("r", function(data){
     return data.radius;
   }).attr("class","player");
-
-}
+};
 
 var addEnemyPlayer = function(data){
   data = board.selectAll("circle.enemyPlayer").data().concat(data);
   
   board.selectAll("circle.enemyPlayer").data(data).enter().append("svg:circle")
   .style("fill", function(data){
+    setFloat(this, "id", data.id);
+    setFloat(this, "points", data.points);
     return data.color;
   }).attr("cx",function(data){
     return data.x;
   }).attr("cy", function(data){
-    setFloat(this, "id", data.id);
     return data.y;
   })
   .attr("r", 0).transition().duration(500).attr("r", function(data){
     return data.radius;
   }).attr("class","enemyPlayer");
 
-}
+};
 
-var setupLevel = function(){
-  levelNum++;
-  var color = "#FFFFFF"
-  if(levelNum === 1){
-    color = "blue"
-  }else if(levelNum === 2){
-    color = "red";
-  }else{
-    color = '#'+Math.floor(Math.random()*16777215).toString(16);
-  }
-  if(levelNum >= 2){
-    var bgColor = board.selectAll("circle.player").style("fill");
-    d3.select(".gameContainer").style("background-color", bgColor);
-    removeEntity(board.select("circle.player"), "circle.player");
-  }
-  //setupPlayer(color);
-  setTimeout(addEnemies, 300);
+var moveEnemyPlayers = function(){
+  var player = board.selectAll("circle.enemyPlayer");
 
-}
+  if(player[0].length <= 0){
+    return;
+  }
+ 
+  player.attr("cx",function(){
+    var dragMultiplier = 1+getFloat(this, "r")/24;
+    var x = getFloat(this, "cx");
+    var mouseX = getFloat(this, "mouseX");
+    return x+(mouseX - x)/dragMultiplier;
+  }).attr("cy", function(){
+    var dragMultiplier = 1+getFloat(this, "r")/24;
+    var y = getFloat(this, "cy");
+    var mouseY = getFloat(this, "mouseY");
+    return y+(mouseY - y)/dragMultiplier;
+  });
+};
 var movePlayer = function(){
   var player = board.selectAll("circle.player");
 
   if(player[0].length <= 0){
     return;
   }
+  var dragMultiplier = 1+getFloat(player, "r")/24;
   player.attr("cx",function(data){
     var x = getFloat(this, "cx");
     xpos = x;
-    return x+(mouse.x - x)/(2+((getFloat(this, "r")-data.radius)/15));
+    return x+(mouse.x - x)/dragMultiplier;
   }).attr("cy", function(data){
     var y = getFloat(this, "cy");
-    return y+(mouse.y - y)/(2+((getFloat(this, "r")-data.radius)/15));
+    return y+(mouse.y - y)/dragMultiplier;
   });
 
-  var x = getFloat(player, "cx");
-  var y = getFloat(player, "cy");
-  socket.emit("playerMove",{x:x, y:y});
-}
+  socket.emit("playerMove",{x:mouse.x, y:mouse.y});
+};
 
 var collisionCheck = function(){
   var enemies = board.selectAll("circle.enemy"); 
@@ -187,17 +201,17 @@ var collisionCheck = function(){
     var enemyR = getFloat(enemy, "r");
     if(distanceBetween(playerX,playerY,enemyX,enemyY)<playerR+enemyR){
       score++;
-      setFloat(player, "r", getFloat(player, "r") * .8);
+      setFloat(player, "r", getFloat(player, "r") * 0.8);
       removeEntity(enemy, "circle.enemy");  
-      addEnemies();
+      socket.emit("playerScore", {points:score, radius: getFloat(player, "r") });
     }
-  })
-}
+  });
+};
 var getFloat = function(item, name){
   if(item instanceof d3.selection){
-    return parseFloat(item.attr(name));
+    return parseFloat(item.attr(name)) || 0;
   }else{
-    return parseFloat(d3.select(item).attr(name));
+    return parseFloat(d3.select(item).attr(name)) || 0;
   }
 };
 var setFloat = function(item, name, value){
@@ -210,9 +224,10 @@ var setFloat = function(item, name, value){
 
 var updateLoop = function(){
   movePlayer();
+  moveEnemyPlayers();
   collisionCheck();
   updateScore();
-}
+};
 var updateScore = function(){
   // d3.select(".high span").text(highScore);
   d3.select(".current span").text(score);
@@ -222,17 +237,17 @@ var updateScore = function(){
   if(levelNum > 1){
    d3.select(".level").text("Level: "+levelNum);
   }
-}
+};
 function inverse(hex) {
-  if (hex.length != 7 || hex.indexOf('#') != 0) {
+  if (hex.length != 7 || hex.indexOf('#') !== 0) {
     return null;
   }
   var r = (255 - parseInt(hex.substring(1, 3), 16)).toString(16);
   var g = (255 - parseInt(hex.substring(3, 5), 16)).toString(16);
   var b = (255 - parseInt(hex.substring(5, 7), 16)).toString(16);
-  var inverse = "#" + pad(r) + pad(g) + pad(b);
+  var inverseColor = "#" + pad(r) + pad(g) + pad(b);
 
-  return inverse
+  return inverseColor;
 }
 function pad(num) {
   if (num.length < 2) {
@@ -246,15 +261,13 @@ var distanceBetween = function(x1,y1,x2,y2){
   var a = x1 - x2;
   var b = y1 - y2;
   return Math.sqrt(a*a + b*b);
-}
+};
 
 board.on("mousemove", function(){
    mouse.x = d3.mouse(this)[0];
    mouse.y = d3.mouse(this)[1];
   });
 
-setupLevel();
-setInterval(moveEnemies, 800);
 setInterval(updateLoop, 1000/60);
 
 

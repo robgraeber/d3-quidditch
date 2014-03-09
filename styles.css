@@ -2,9 +2,12 @@
 
 /* Note: an asteroid image is included in this repo. 
 Feel free to use it if you like. */
+h3{
+  margin: 0;
+}
 .gameContainer{
-  width:1024px;
-  height:768px;
+  width:1400px;
+  height:600px;
   background-color:black;
   cursor: none;
 }
