@@ -93,7 +93,7 @@ var setupPlayer = function(socket){
   var player = {};
     
   player.radius = 24;
-  player.color = '#'+Math.floor(Math.random()*16777215).toString(16);
+  player.color = '#'+(Math.random()*0xFFFFFF<<0).toString(16);
   player.points = 0;
   player.id = ++playerCounter;
   player.x = Math.random()*1024;

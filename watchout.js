@@ -60,8 +60,8 @@ socket.on('enemyExit', function (data) {
   d3.selectAll("circle.enemyPlayer").each(function(d,i){
       var id = getFloat(this,"id");
       if(id === data.id){
+        d3.selectAll(".enemy"+id).remove();
         removeEntity(this, "circle.enemyPlayer");
-        d3.select(".enemy"+id).remove();
       }
     });
 });
