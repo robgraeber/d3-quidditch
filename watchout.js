@@ -3,7 +3,6 @@ var width = 1400;
 var height = 600;
 var mouse = {x:0, y:0};
 var score = 0;
-var highScore = 0;
 var levelNum = 0;
 
 var board = d3.select(".gameContainer").append("svg:svg");
@@ -59,8 +58,10 @@ socket.on('enemyEnter', function (data) {
 socket.on('enemyExit', function (data) {
   console.log("ENEMY PLAYER EXIT",data);
   d3.selectAll("circle.enemyPlayer").each(function(d,i){
-      if(getFloat(this,"id") === data.id){
+      var id = getFloat(this,"id");
+      if(id === data.id){
         removeEntity(this, "circle.enemyPlayer");
+        d3.select(".enemy"+id).remove();
       }
     });
 });
@@ -117,6 +118,7 @@ var addPlayer = function(data){
   .style("fill", function(data){
     setFloat(this, "id", data.id);
     setFloat(this, "points", 0);
+    d3.select(".scoreboard").append("div").attr("class", "enemy"+data.id+" score").text("Guest #"+data.id+" (You): ").append("span").text("0");
     return data.color;
   }).attr("cx",function(data){
     return data.x;
@@ -134,6 +136,8 @@ var addEnemyPlayer = function(data){
   .style("fill", function(data){
     setFloat(this, "id", data.id);
     setFloat(this, "points", data.points);
+    d3.select(".score.enemy"+data.id).remove();
+    d3.select(".scoreboard").append("div").attr("class", "enemy"+data.id+" score").text("Guest #"+data.id+": ").append("span").text("0");
     return data.color;
   }).attr("cx",function(data){
     return data.x;
@@ -201,7 +205,8 @@ var collisionCheck = function(){
     var enemyR = getFloat(enemy, "r");
     if(distanceBetween(playerX,playerY,enemyX,enemyY)<playerR+enemyR){
       score++;
-      setFloat(player, "r", getFloat(player, "r") * 0.8);
+      setFloat(player,"points", score);
+      setFloat(player, "r", getFloat(player, "r") * 0.95);
       removeEntity(enemy, "circle.enemy");  
       socket.emit("playerScore", {points:score, radius: getFloat(player, "r") });
     }
@@ -229,14 +234,16 @@ var updateLoop = function(){
   updateScore();
 };
 var updateScore = function(){
-  // d3.select(".high span").text(highScore);
-  d3.select(".current span").text(score);
-  if(score > highScore){
-    highScore = score;
-  }
-  if(levelNum > 1){
-   d3.select(".level").text("Level: "+levelNum);
-  }
+  d3.selectAll("circle.player").each(function(d, i){
+    var id = getFloat(this, "id");
+    var points = getFloat(this, "points");
+    d3.select(".enemy"+id+" span").text(points);
+  });
+  d3.selectAll("circle.enemyPlayer").each(function(d, i){
+    var id = getFloat(this, "id");
+    var points = getFloat(this, "points");
+    d3.select(".enemy"+id+" span").text(points);
+  });
 };
 function inverse(hex) {
   if (hex.length != 7 || hex.indexOf('#') !== 0) {

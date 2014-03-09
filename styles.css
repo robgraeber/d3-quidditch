@@ -11,7 +11,14 @@ h3{
   background-color:black;
   cursor: none;
 }
-
+.score{
+  font-weight: bold;
+  display: inline;
+  margin-right: 10px;
+}
+.score span{
+  font-weight: normal;
+}
 circle.enemy{
   opacity:0.8;
   stroke: black;
