@@ -206,7 +206,9 @@ var collisionCheck = function(){
     if(distanceBetween(playerX,playerY,enemyX,enemyY)<playerR+enemyR){
       score++;
       setFloat(player,"points", score);
-      setFloat(player, "r", getFloat(player, "r") * 0.95);
+      var newRadius = getFloat(player, "r") * 0.95;
+      newRadius = Math.max(1, newRadius);
+      setFloat(player, "r", newRadius);
       removeEntity(enemy, "circle.enemy");  
       socket.emit("playerScore", {points:score, radius: getFloat(player, "r") });
     }
