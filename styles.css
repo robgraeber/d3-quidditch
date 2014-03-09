@@ -3,8 +3,8 @@
 /* Note: an asteroid image is included in this repo. 
 Feel free to use it if you like. */
 .gameContainer{
-  width:100%;
-  /*height:100%;*/
+  width:1024px;
+  height:768px;
   background-color:black;
   cursor: none;
 }

@@ -1,8 +1,7 @@
 // start slingin' some d3 here.
-var width = window.innerWidth*0.99;
-var height = window.innerHeight*0.94;
+var width = 1024;
+var height = 768;
 var mouse = {x:0, y:0};
-var levelScore = 0;
 var score = 0;
 var highScore = 0;
 var levelNum = 0;
@@ -11,25 +10,41 @@ var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
 var socket = io.connect('http://23.239.1.96:2020');
-socket.on("initialize other players", function(data){
-  console.log("INITIALIZE OTHER PLAYERS",data);
+socket.on("playerInitialize", function(data){
+  addPlayer(data);
+  console.log("INITIALIZE ME",data);
 })
-socket.on('enemy player move', function (data) {
-  console.log("ENEMY PLAYER MOVE", data);
-});
-socket.on('enemy player enter', function (data) {
+socket.on("enemyInitialize", function(data){
+  for(var key in data){
+    console.log("INITIALIZE OTHER PLAYERS",data[key]);
+    addEnemyPlayer(data[key]);
+  }
+})
+socket.on('enemyMove', function (data) {
+  console.log(data);
+  _.each(data, function(item){
+    d3.selectAll("circle.enemyPlayer").each(function(d,i){
+      if(getFloat(this,"id") === item.id){
+        setFloat(this,"cx",item.x);
+        setFloat(this,"cy",item.y);
+      }
+    })
+  })
 
-  console.log("ENEMY PLAYER ENTER",data);
 });
-socket.on('enemy player exit', function (data) {
+socket.on('enemyEnter', function (data) {
+  console.log("ENEMY PLAYER ENTER",data);
+  addEnemyPlayer(data);
+});
+socket.on('enemyExit', function (data) {
   console.log("ENEMY PLAYER EXIT",data);
 });
 
 var addEnemies = function (){
-  var color = inverse(board.select("circle.player").style("fill"));
+  // var color = inverse(board.select("circle.player").style("fill"));
   var currentEnemies = board.selectAll("circle.enemy").data().concat(
     _.map(_.range(2,3), function(num){
-      return {radius: num, color: color};
+      return {radius: num, color: "#FFFF00"};
    })
   );
   setupEnemies(currentEnemies);
@@ -82,10 +97,10 @@ var moveEnemies = function(){
   });
 }
 
-var setupPlayer = function(color){
-  color = color||"#FFFFFF";
-  var player = board.selectAll("circle.player").data([{x:Math.random()*width, y:Math.random()*height, radius:24, color: color}]);
-  player.enter().append("svg:circle")
+var addPlayer = function(data){
+  data = board.selectAll("circle.player").data().concat(data);
+  
+  board.selectAll("circle.player").data(data).enter().append("svg:circle")
   .style("fill", function(data){
     return data.color;
   }).attr("cx",function(data){
@@ -95,7 +110,27 @@ var setupPlayer = function(color){
   }).attr("r", 0).transition().duration(500).attr("r", function(data){
     return data.radius;
   }).attr("class","player");
+
 }
+
+var addEnemyPlayer = function(data){
+  data = board.selectAll("circle.enemyPlayer").data().concat(data);
+  
+  board.selectAll("circle.enemyPlayer").data(data).enter().append("svg:circle")
+  .style("fill", function(data){
+    return data.color;
+  }).attr("cx",function(data){
+    return data.x;
+  }).attr("cy", function(data){
+    setFloat(this, "id", data.id);
+    return data.y;
+  })
+  .attr("r", 0).transition().duration(500).attr("r", function(data){
+    return data.radius;
+  }).attr("class","enemyPlayer");
+
+}
+
 var setupLevel = function(){
   levelNum++;
   var color = "#FFFFFF"
@@ -111,30 +146,36 @@ var setupLevel = function(){
     d3.select(".gameContainer").style("background-color", bgColor);
     removeEntity(board.select("circle.player"), "circle.player");
   }
-  setupPlayer(color);
+  //setupPlayer(color);
   setTimeout(addEnemies, 300);
 
 }
 var movePlayer = function(){
-   var player = board.selectAll("circle.player");
-    player
-    .attr("cx",function(data){
-      var x = getFloat(this, "cx");
-      xpos = x;
-      return x+(mouse.x - x)/(2+((getFloat(this, "r")-data.radius)/15));
-    }).attr("cy", function(data){
-      var y = getFloat(this, "cy");
-      return y+(mouse.y - y)/(2+((getFloat(this, "r")-data.radius)/15));
-    });
+  var player = board.selectAll("circle.player");
 
-    var x = getFloat(player, "cx");
-    var y = getFloat(player, "cy");
-    socket.emit("player move",{x:x, y:y});
+  if(player[0].length <= 0){
+    return;
+  }
+  player.attr("cx",function(data){
+    var x = getFloat(this, "cx");
+    xpos = x;
+    return x+(mouse.x - x)/(2+((getFloat(this, "r")-data.radius)/15));
+  }).attr("cy", function(data){
+    var y = getFloat(this, "cy");
+    return y+(mouse.y - y)/(2+((getFloat(this, "r")-data.radius)/15));
+  });
+
+  var x = getFloat(player, "cx");
+  var y = getFloat(player, "cy");
+  socket.emit("playerMove",{x:x, y:y});
 }
 
 var collisionCheck = function(){
   var enemies = board.selectAll("circle.enemy"); 
-  var player = board.select("circle.player");
+  var player = board.selectAll("circle.player");
+  if(player[0].length <= 0){
+    return;
+  }
 
   var playerX = getFloat(player, "cx");
   var playerY = getFloat(player, "cy");
@@ -146,16 +187,9 @@ var collisionCheck = function(){
     var enemyR = getFloat(enemy, "r");
     if(distanceBetween(playerX,playerY,enemyX,enemyY)<playerR+enemyR){
       score++;
-      levelScore++;
-      setFloat(player, "r", getFloat(player, "r") + 20);
-      removeEntity(enemy, "circle.enemy");
-      
-      if(levelScore >= 75){
-        levelScore = 0;
-        setTimeout(setupLevel, 300);
-      }else{
-        addEnemies();
-      }
+      setFloat(player, "r", getFloat(player, "r") * .8);
+      removeEntity(enemy, "circle.enemy");  
+      addEnemies();
     }
   })
 }
@@ -222,6 +256,7 @@ board.on("mousemove", function(){
 setupLevel();
 setInterval(moveEnemies, 800);
 setInterval(updateLoop, 1000/60);
+
 
 
 
