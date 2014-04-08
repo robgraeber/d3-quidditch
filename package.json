@@ -1,0 +1,22 @@
+{
+  "name": "D3-Quidditch",
+  "version": "0.0.0",
+  "description": "",
+  "main": "app.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git://github.com/robgraeber/2014-02-watchout.git"
+  },
+  "author": "",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/robgraeber/2014-02-watchout/issues"
+  },
+  "homepage": "https://github.com/robgraeber/2014-02-watchout",
+  "dependencies": {
+    "socket.io": "~0.9.16"
+  }
+}

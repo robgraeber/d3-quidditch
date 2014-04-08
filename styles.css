@@ -2,4 +2,37 @@
 
 /* Note: an asteroid image is included in this repo. 
 Feel free to use it if you like. */
+h3{
+  margin: 0;
+}
+.gameContainer{
+  width:1400px;
+  height:600px;
+  background-color:black;
+  cursor: none;
+}
+.score{
+  font-weight: bold;
+  display: inline;
+  margin-right: 10px;
+}
+.score span{
+  font-weight: normal;
+}
+circle.enemy{
+  opacity:0.8;
+  stroke: black;
+  stroke-opacity: 0.08;
+  stroke-width:1;
+  z-index: -1;
+}
 
+circle.player{
+  stroke: black;
+  stroke-opacity: 0.08;
+  stroke-width:1;
+  z-index: 1000;
+}
+.level{
+  height:18px;
+}
