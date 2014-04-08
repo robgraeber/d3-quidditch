@@ -104,7 +104,7 @@ exports.init = function(server){
     });
   };
   setupSnitch();
-  setInterval(updatePlayerPositions,100);
+  setInterval(updatePlayerPositions,50);
   setInterval(moveSnitch,800);
-}
+};
 
