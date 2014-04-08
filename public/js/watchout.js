@@ -8,7 +8,7 @@ var levelNum = 0;
 var board = d3.select(".gameContainer").append("svg:svg");
 board.attr("height",height).attr("width",width);
 
-var socket = io.connect('http://23.239.1.96:2016');
+var socket = io.connect('/');
 socket.on("playerInitialize", function(data){
   addPlayer(data);
   console.log("playerInitialize",data);

@@ -1,22 +1,13 @@
 {
-  "name": "D3-Quidditch",
-  "version": "0.0.0",
-  "description": "",
-  "main": "app.js",
+  "name": "application-name",
+  "version": "0.0.1",
+  "private": true,
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "start": "node app.js"
   },
-  "repository": {
-    "type": "git",
-    "url": "git://github.com/robgraeber/2014-02-watchout.git"
-  },
-  "author": "",
-  "license": "ISC",
-  "bugs": {
-    "url": "https://github.com/robgraeber/2014-02-watchout/issues"
-  },
-  "homepage": "https://github.com/robgraeber/2014-02-watchout",
   "dependencies": {
-    "socket.io": "~0.9.16"
+    "express": "3.5.1",
+    "ejs": "*",
+    "underscore": "~1.6.0"
   }
 }

@@ -1,14 +1,41 @@
-var app = require('http').createServer(handler);
-var io = require('socket.io').listen(app);
-var fs = require('fs');
+
+/**
+ * Module dependencies.
+ */
 var _ = require('underscore');
+var express = require('express');
+var routes = require('./routes');
+var io = require('socket.io');
+var http = require('http');
+var path = require('path');
+var app = express();
 var width = 1400;
 var height = 600;
-app.listen(process.env.PORT || 2016);
 
-function handler (req, res) {
-  console.log("POKE");
+// all environments
+app.set('port', process.env.PORT || 3000);
+app.set('views', path.join(__dirname, 'views'));
+app.set('view engine', 'ejs');
+// app.use(express.favicon());
+app.use(express.logger('dev'));
+app.use(express.json());
+app.use(express.urlencoded());
+app.use(express.methodOverride());
+app.use(app.router);
+app.use(express.static(path.join(__dirname, 'public')));
+
+// development only
+if ('development' == app.get('env')) {
+  app.use(express.errorHandler());
 }
+
+app.get('/', routes.index);
+
+var server = http.createServer(app).listen(app.get('port'), function(){
+  console.log('Express server listening on port ' + app.get('port'));
+});
+
+io = io.listen(server);
 
 var playerCounter = 0;
 var players = [];
